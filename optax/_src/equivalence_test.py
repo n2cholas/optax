@@ -35,8 +35,8 @@ class ExperimentalOptimizersEquivalenceTest(chex.TestCase):
 
   def setUp(self):
     super().setUp()
-    self.init_params = (jnp.array([1., 2.]), jnp.array([3., 4.]))
-    self.per_step_updates = (jnp.array([500., 5.]), jnp.array([300., 3.]))
+    self.init_params = (jnp.array([1., 2.]), jnp.array([3., 4., 5.]))
+    self.per_step_updates = (jnp.array([500., 5.]), jnp.array([300., 3., 1.]))
 
   @chex.all_variants()
   @parameterized.named_parameters(
@@ -94,8 +94,10 @@ class FlaxOptimizersEquivalenceTest(chex.TestCase):
 
   def setUp(self):
     super().setUp()
-    self.init_params = (jnp.array([1., 2.]), jnp.array([3., 4.]))
-    self.per_step_updates = (jnp.array([500., 5.]), jnp.array([300., 3.]))
+    self.init_params = (
+        jnp.array([1., 2.]), jnp.array([3., 4., .9, 0.2, 0.1]))
+    self.per_step_updates = (
+        jnp.array([500., 5.]), jnp.array([300., 3., .85, 0.4, 0.07]))
 
   @parameterized.named_parameters(
       ('sgd',
@@ -125,6 +127,27 @@ class FlaxOptimizersEquivalenceTest(chex.TestCase):
       ('lamb',
        alias.lamb(LR),
        optim.LAMB(LR)),
+      ('adafactor',
+       alias.adafactor(
+           learning_rate=LR,
+           factored=True,
+           multiply_by_parameter_scale=True,
+           clipping_threshold=0.1,
+           momentum=0.2,
+           decay_rate=0.8,
+           decay_offset=5,
+           weight_decay_rate=0.2,
+           min_dim_size_to_factor=1),
+       optim.Adafactor(
+           learning_rate=LR,
+           factored=True,
+           multiply_by_parameter_scale=True,
+           clipping_threshold=0.1,
+           beta1=0.2,  # Different arg name.
+           decay_rate=0.8,
+           step_offset=5,  # Different arg name.
+           weight_decay_rate=0.2,
+           min_dim_size_to_factor=1)),
   )
   def test_flax_optim_equivalence(self, optax_optimizer, flax_optimizer):
 
